@@ -40,103 +40,88 @@ public class JsonDatabaseHandler {
         }
     }
 
-    public void addJsonRecord(Object jsonData) throws IOException, ReflectiveOperationException {
-        String className = jsonData.getClass().getSimpleName();
-        TableMetadata tableMetadata = metadataMap.get(className);
+    public void addJsonRecord(Map<String, Object> jsonData, String rootType) throws IOException, ReflectiveOperationException {
+        TableMetadata tableMetadata = metadataMap.get(rootType);
         if (tableMetadata != null) {
             saveRecord(jsonData, tableMetadata, null);
         }
     }
 
-    public <T> T getJsonRecord(int id, Class<T> valueType) throws IOException, ReflectiveOperationException {
-        String className = valueType.getSimpleName();
-        TableMetadata tableMetadata = metadataMap.get(className);
+    public Map<String, Object> getJsonRecord(int id, String rootType) throws IOException, ReflectiveOperationException {
+        TableMetadata tableMetadata = metadataMap.get(rootType);
         if (tableMetadata != null) {
-            return loadRecord(id, valueType, tableMetadata);
+            return loadRecord(id, tableMetadata);
         }
         return null;
     }
 
-    private void saveRecord(Object jsonData, TableMetadata tableMetadata, Integer parentId) throws IOException, ReflectiveOperationException {
+    private void saveRecord(Map<String, Object> jsonData, TableMetadata tableMetadata, Integer parentId) throws IOException, ReflectiveOperationException {
         Table table = database.getTable(tableMetadata.getTableName());
         int generatedId = UUID.randomUUID().hashCode();
-        setFieldValue(jsonData, "id", generatedId);
+        jsonData.put("id", generatedId);
         Record record = new Record(generatedId);
         for (Map.Entry<String, String> entry : tableMetadata.getFields().entrySet()) {
             String fieldName = entry.getKey();
             String fieldType = entry.getValue();
-            Object fieldValue = getFieldValue(jsonData, fieldName);
+            Object fieldValue = jsonData.get(fieldName);
             if (fieldType.startsWith("List<")) {
-                List<?> list = (List<?>) fieldValue;
-                for (Object item : list) {
+                List<Map<String, Object>> list = (List<Map<String, Object>>) fieldValue;
+                for (Map<String, Object> item : list) {
                     saveRecord(item, metadataMap.get(fieldType.substring(5, fieldType.length() - 1)), generatedId);
                 }
             } else if (metadataMap.containsKey(fieldType)) {
-                setFieldValue(fieldValue, "parentId", generatedId);
-                saveRecord(fieldValue, metadataMap.get(fieldType), generatedId);
+                ((Map<String, Object>) fieldValue).put("parentId", generatedId);
+                saveRecord((Map<String, Object>) fieldValue, metadataMap.get(fieldType), generatedId);
             } else {
                 record.setData(fieldName, fieldValue);
             }
         }
         if (parentId != null) {
             record.setData("parentId", parentId);
-            setFieldValue(jsonData, "parentId", parentId);
+            jsonData.put("parentId", parentId);
         }
         table.addRecord(record);
     }
 
-    private <T> T loadRecord(int id, Class<T> valueType, TableMetadata tableMetadata) throws IOException, ReflectiveOperationException {
+    private Map<String, Object> loadRecord(int id, TableMetadata tableMetadata) throws IOException, ReflectiveOperationException {
         Table table = database.getTable(tableMetadata.getTableName());
         Record record = table.getRecord(id);
         if (record == null) {
             return null;
         }
-        T instance = valueType.getDeclaredConstructor().newInstance();
-        setFieldValue(instance, "id", id);
+        Map<String, Object> instance = new HashMap<>();
+        instance.put("id", id);
         for (Map.Entry<String, String> entry : tableMetadata.getFields().entrySet()) {
             String fieldName = entry.getKey();
             String fieldType = entry.getValue();
             if (fieldType.startsWith("List<")) {
                 String nestedClassName = fieldType.substring(5, fieldType.length() - 1);
-                Class<?> nestedClass = Class.forName("idb.model." + nestedClassName);
-                List<Object> nestedList = loadNestedList(id, nestedClass, metadataMap.get(nestedClassName));
-                setFieldValue(instance, fieldName, nestedList);
+                List<Map<String, Object>> nestedList = loadNestedList(id, nestedClassName);
+                instance.put(fieldName, nestedList);
             } else if (metadataMap.containsKey(fieldType)) {
-                Table table1 = database.getTable( metadataMap.get(fieldType).getTableName());
-                Map<Integer, Record> nestedRecords = table1.queryRecords("parentId", id);
+                Table nestedTable = database.getTable(metadataMap.get(fieldType).getTableName());
+                Map<Integer, Record> nestedRecords = nestedTable.queryRecords("parentId", id);
                 if (!nestedRecords.isEmpty()) {
                     Record nestedRecord = nestedRecords.values().iterator().next();
-                    Object nestedInstance = loadRecord(nestedRecord.getId(), Class.forName("idb.model." + fieldType), metadataMap.get(fieldType));
-                    setFieldValue(instance, fieldName, nestedInstance);
+                    Map<String, Object> nestedInstance = loadRecord(nestedRecord.getId(), metadataMap.get(fieldType));
+                    instance.put(fieldName, nestedInstance);
                 }
             } else {
-                setFieldValue(instance, fieldName, record.getData(fieldName));
+                instance.put(fieldName, record.getData(fieldName));
             }
         }
         return instance;
     }
 
-    private List<Object> loadNestedList(int parentId, Class<?> nestedClass, TableMetadata nestedMetadata) throws ReflectiveOperationException, IOException {
-        Table table = database.getTable(nestedMetadata.getTableName());
+    private List<Map<String, Object>> loadNestedList(int parentId, String nestedClassName) throws ReflectiveOperationException, IOException {
+        Table table = database.getTable(metadataMap.get(nestedClassName).getTableName());
         Map<Integer, Record> records = table.queryRecords("parentId", parentId);
-        List<Object> resultList = new ArrayList<>();
+        List<Map<String, Object>> resultList = new ArrayList<>();
         for (Record record : records.values()) {
-            Object nestedInstance = loadRecord(record.getId(), nestedClass, nestedMetadata);
+            Map<String, Object> nestedInstance = loadRecord(record.getId(), metadataMap.get(nestedClassName));
             resultList.add(nestedInstance);
         }
         return resultList;
-    }
-
-    private Object getFieldValue(Object instance, String fieldName) throws ReflectiveOperationException {
-        Field field = instance.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        return field.get(instance);
-    }
-
-    private void setFieldValue(Object instance, String fieldName, Object value) throws ReflectiveOperationException {
-        Field field = instance.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(instance, value);
     }
 }
 
