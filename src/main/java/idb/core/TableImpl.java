@@ -415,7 +415,8 @@ public class TableImpl implements Table {
     @Override
     public void saveToCSV() throws IOException {
         lock.writeLock().lock();
-        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(csvFilePath))))) {
+//        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(csvFilePath))))) {
+        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(csvFilePath)))) {
             writer.write("id");
             if (!records.isEmpty()) {
                 for (String columnName : records.values().iterator().next().getData().keySet()) {
@@ -446,7 +447,8 @@ public class TableImpl implements Table {
 
             records.clear();
             cache.clear(); // 清空缓存
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))))) {
+//            try (BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))))) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))) {
                 String line = reader.readLine(); // Read header
                 if (line == null) return;
                 String[] headers = line.split(",");

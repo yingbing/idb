@@ -1,0 +1,33 @@
+User:
+  table: Users
+  fields:
+    id: Integer
+    name: String
+    age: Integer
+    address: Address
+    contacts: List<Contact>
+    preferences: Preferences
+
+Address:
+  table: Addresses
+  fields:
+    id: Integer
+    parentId: Integer
+    city: String
+    state: String
+
+Contact:
+  table: Contacts
+  fields:
+    id: Integer
+    parentId: Integer
+    type: String
+    value: String
+
+Preferences:
+  table: Preferences
+  fields:
+    id: Integer
+    parentId: Integer
+    newsletter: Boolean
+    notifications: Map<String, Boolean>
