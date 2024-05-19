@@ -66,6 +66,12 @@ public class JsonMain {
             // 存储 JSON 数据
             jsonDatabaseHandler.addJsonRecord(user, "User");
 
+            // 更新 JSON 数据
+            user.put("age", 31);
+            Map<String, Object> address = (Map<String, Object>) user.get("address");
+            address.put("city", "San Francisco");
+            jsonDatabaseHandler.updateJsonRecord((int) user.get("id"), user, "User");
+
             // 读取 JSON 数据
             Map<String, Object> storedUser = jsonDatabaseHandler.getJsonRecord((int) user.get("id"), "User");
 

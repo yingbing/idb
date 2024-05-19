@@ -15,6 +15,7 @@ public interface Table {
     void addRecord(Record record, Transaction transaction) throws IOException;
     void updateRecord(int id, String columnName, Object newValue) throws IOException;
     void updateRecord(int id, String columnName, Object newValue, Transaction transaction) throws IOException;
+    void updateRecord(Record record) throws IOException;
     void deleteRecord(int id) throws IOException;
     void deleteRecord(int id, Transaction transaction) throws IOException;
     Record getRecord(int id);

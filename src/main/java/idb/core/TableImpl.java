@@ -136,6 +136,19 @@ public class TableImpl implements Table {
     }
 
     @Override
+    public void updateRecord(Record record) throws IOException {
+        lock.writeLock().lock();
+        try {
+            records.put(record.getId(), record);
+            cache.put(record.getId(), record); // 更新缓存
+            updateIndexes(record);
+            saveToCSV();
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    @Override
     public void deleteRecord(int id) throws IOException {
         deleteRecord(id, null);
     }
@@ -415,7 +428,6 @@ public class TableImpl implements Table {
     @Override
     public void saveToCSV() throws IOException {
         lock.writeLock().lock();
-//        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(csvFilePath))))) {
         try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(csvFilePath)))) {
             writer.write("id");
             if (!records.isEmpty()) {
@@ -447,7 +459,6 @@ public class TableImpl implements Table {
 
             records.clear();
             cache.clear(); // 清空缓存
-//            try (BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))))) {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))) {
                 String line = reader.readLine(); // Read header
                 if (line == null) return;
