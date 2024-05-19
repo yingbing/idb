@@ -1,5 +1,7 @@
 package idb;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import idb.core.Database;
 import idb.core.Table;
 import idb.utils.JsonDatabaseHandler;
@@ -30,36 +32,46 @@ public class JsonMain {
             JsonDatabaseHandler jsonDatabaseHandler = new JsonDatabaseHandler(database, "src/main/resources/json_structure.yaml");
 
             // 示例 JSON 数据
-            Map<String, Object> user = new HashMap<>();
-            user.put("name", "Alice");
-            user.put("age", 30);
+            String jsonString = """
+            {
+                "name": "Alice",
+                "age": 30,
+                "address": {
+                    "city": "New York",
+                    "state": "NY"
+                },
+                "contacts": [
+                    {
+                        "type": "email",
+                        "value": "alice@example.com"
+                    },
+                    {
+                        "type": "phone",
+                        "value": "123-456-7890"
+                    }
+                ],
+                "preferences": {
+                    "newsletter": true,
+                    "notifications": {
+                        "email": true,
+                        "sms": false
+                    }
+                }
+            }
+            """;
 
-            Map<String, Object> address = new HashMap<>();
-            address.put("city", "New York");
-            address.put("state", "NY");
-            user.put("address", address);
-
-            Map<String, Object> contact1 = new HashMap<>();
-            contact1.put("type", "email");
-            contact1.put("value", "alice@example.com");
-
-            Map<String, Object> contact2 = new HashMap<>();
-            contact2.put("type", "phone");
-            contact2.put("value", "123-456-7890");
-
-            user.put("contacts", List.of(contact1, contact2));
-
-            Map<String, Object> preferences = new HashMap<>();
-            preferences.put("newsletter", true);
-            preferences.put("notifications", Map.of("email", true, "sms", false));
-            user.put("preferences", preferences);
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, Object> user = objectMapper.readValue(jsonString, new TypeReference<Map<String, Object>>(){});
 
             // 存储 JSON 数据
             jsonDatabaseHandler.addJsonRecord(user, "User");
 
             // 读取 JSON 数据
             Map<String, Object> storedUser = jsonDatabaseHandler.getJsonRecord((int) user.get("id"), "User");
-            System.out.println("Stored User: " + storedUser);
+
+            // 转换回 JSON 字符串
+            String storedJsonString = objectMapper.writeValueAsString(storedUser);
+            System.out.println("Stored User JSON: " + storedJsonString);
 
         } catch (IOException | ReflectiveOperationException e) {
             e.printStackTrace();
