@@ -239,8 +239,10 @@ public class TableImpl implements Table {
         lock.readLock().lock();
         try {
             Map<Integer, Record> result = new HashMap<>();
+            String valueAsString = String.valueOf(value); // 将查询值转换为字符串
             for (Record record : records.values()) {
-                if (record.getData(columnName).equals(value)) {
+                String recordValueAsString = String.valueOf(record.getData(columnName)); // 将记录值转换为字符串
+                if (recordValueAsString.equals(valueAsString)) {
                     result.put(record.getId(), record);
                 }
             }

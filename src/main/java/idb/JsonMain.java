@@ -4,15 +4,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import idb.core.Database;
 import idb.core.Table;
-import idb.utils.JsonDatabaseHandler;
-import idb.model.Address;
-import idb.model.Contact;
-import idb.model.Preferences;
-import idb.model.User;
 import idb.model.Record;
+import idb.utils.JsonDatabaseHandler;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 public class JsonMain {
     public static void main(String[] args) {

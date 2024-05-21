@@ -17,6 +17,14 @@ public class JsonDatabaseHandler {
     private ObjectMapper objectMapper;
     private Map<String, TableMetadata> metadataMap;
 
+    public Database getDatabase() {
+        return database;
+    }
+
+    public void setDatabase(Database database) {
+        this.database = database;
+    }
+
     public JsonDatabaseHandler(Database database, String configFilePath) throws IOException {
         this.database = database;
         this.objectMapper = new ObjectMapper();
