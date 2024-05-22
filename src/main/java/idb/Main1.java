@@ -1,11 +1,14 @@
 package idb;
 
 import idb.core.Database;
+import idb.core.SQLQueryHandler;
 import idb.core.Table;
 import idb.model.Record;
+import net.sf.jsqlparser.JSQLParserException;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 
 public class Main1 {
     public static void main(String[] args) {
@@ -42,8 +45,19 @@ public class Main1 {
             Map<Integer, Record> productQueryResults = productsTable.queryRecords("name", "Laptop");
             System.out.println("Query results for name 'Laptop' in Products table: " + productQueryResults);
 
+            SQLQueryHandler sqlQueryHandler = new SQLQueryHandler(db);
+            // 使用 SQL 查询来检索数据
+            String sql = "SELECT * FROM Users WHERE age = 31";
+            Set<Record> records = sqlQueryHandler.executeQuery(sql);
+
+            // 输出查询结果
+            for (Record record : records) {
+                System.out.println(record);
+            }
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (ReflectiveOperationException | JSQLParserException e) {
+            throw new RuntimeException(e);
         }
     }
 }

@@ -1,21 +1,27 @@
 package idb.resource;
 
+import idb.core.SQLQueryHandler;
 import idb.model.Message;
+import idb.model.Record;
 import idb.utils.JsonDatabaseHandler;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import net.sf.jsqlparser.JSQLParserException;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 
 
 @Path("/json")
 public class JsonResource {
     private JsonDatabaseHandler jsonDatabaseHandler;
+    private SQLQueryHandler sqlQueryHandler;
 
-    public JsonResource(JsonDatabaseHandler jsonDatabaseHandler) {
+    public JsonResource(JsonDatabaseHandler jsonDatabaseHandler, SQLQueryHandler sqlQueryHandler) {
         this.jsonDatabaseHandler = jsonDatabaseHandler;
+        this.sqlQueryHandler = sqlQueryHandler;
     }
 
     @GET
@@ -74,6 +80,20 @@ public class JsonResource {
             jsonDatabaseHandler.getDatabase().getTable("Users").deleteRecord(id);
             return Response.noContent().build();
         } catch (IOException e) {
+            e.printStackTrace();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @POST
+    @Path("/query")
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response queryJson(String sql) {
+        try {
+            Set<Record> records = sqlQueryHandler.executeQuery(sql);
+            return Response.ok(records).build();
+        } catch (JSQLParserException | ReflectiveOperationException | IOException e) {
             e.printStackTrace();
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
